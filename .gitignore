@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.tsbuildinfo
+tmp/
+.npm-cache/
+reference-*.png
+preview.png
+preview-f9.png
+طابور الصفين.pdf
+لقطة الشاشة 2026-10-21 102001.png
+.env
+.env.*
+!.env.example

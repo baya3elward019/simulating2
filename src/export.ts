@@ -1,0 +1,51 @@
+import ExcelJS from 'exceljs';
+import {stats,mm1,type Config,type Dist,type Row} from './engine';
+import {chanceFormulas,distributionFormulas,queueFormulas,queueHeaders,queueLayout} from './excelFormulas';
+
+function workbook(){const w=new ExcelJS.Workbook();w.creator='SimuLab';w.calcProperties.fullCalcOnLoad=true;return w;}
+function title(s:ExcelJS.Worksheet,text:string,end='R'){s.mergeCells(`A1:${end}1`);s.getCell('A1').value=text;s.getCell('A1').font={bold:true,size:20,color:{argb:'FFFFFFFF'}};s.getCell('A1').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF18346A'}};s.getRow(1).height=38;}
+function header(s:ExcelJS.Worksheet,row:number,start:number,labels:string[]){labels.forEach((v,i)=>{const cell=s.getCell(row,start+i);cell.value=v;cell.font={bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF3158A0'}};cell.alignment={wrapText:true,vertical:'middle'};});s.getRow(row).height=32;}
+function formula(s:ExcelJS.Worksheet,address:string,f:string,result?:number|string){s.getCell(address).value={formula:f,...(result===undefined?{}:{result})};s.getCell(address).numFmt='0.000';}
+function input(s:ExcelJS.Worksheet,address:string,value:number|string){const cell=s.getCell(address);cell.value=value;cell.font={color:{argb:'FF245AC3'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEAF1FF'}};}
+function distribution(s:ExcelJS.Worksheet,d:Dist,start:number,label:string){const col=(i:number)=>String.fromCharCode(64+start+i);s.getCell(4,start).value=label;header(s,5,start,['CDM','Time','P','CDF']);let total=0;d.forEach((x,i)=>{const r=i+6;input(s,`${col(1)}${r}`,x.value);input(s,`${col(2)}${r}`,x.p);formula(s,`${col(0)}${r}`,i?`${col(3)}${r-1}`:'0',total);total+=x.p;formula(s,`${col(3)}${r}`,`ROUND(${col(0)}${r}+${col(2)}${r},12)`,total);s.getCell(`${col(1)}${r}`).dataValidation={type:'decimal',operator:'greaterThanOrEqual',formulae:[0],showErrorMessage:true,error:'Time must be nonnegative.'};s.getCell(`${col(2)}${r}`).dataValidation={type:'decimal',operator:'between',formulae:[0,1],showErrorMessage:true,error:'Probability must be between 0 and 1.'};});const r=6+d.length,last=r-1;s.getCell(r,start).value='Σ P / validation';formula(s,`${col(2)}${r}`,`SUM(${col(2)}6:${col(2)}${last})`,1);formula(s,`${col(3)}${r}`,`IF(AND(COUNT(${col(1)}6:${col(1)}${last})=${d.length},COUNT(${col(2)}6:${col(2)}${last})=${d.length},MIN(${col(1)}6:${col(1)}${last})>=0,MIN(${col(2)}6:${col(2)}${last})>=0,MAX(${col(2)}6:${col(2)}${last})<=1,ABS(${col(2)}${r}-1)<0.00000001),"OK","INVALID")`,'OK');}
+
+export async function makeWorkbook(rows:Row[],c:Config){
+  const w=workbook(),s=w.addWorksheet('Simulation'),{first,last,header:head}=queueLayout(c),two=!!c.b,m=c.lambda!==undefined,stat=stats(rows,two?2:1);
+  title(s,`SimuLab · ${m?'M/M/1':two?'Two servers':'Single queue'} · محاكاة إكسل`);
+  s.mergeCells('A2:R2');s.getCell('A2').value='F9 / Fn+F9: new simulation • RAND → VLOOKUP → all calculations update • اضغط F9 لمحاكاة جديدة';s.getRow(2).height=26;
+  s.mergeCells('A3:R3');s.getCell('A3').value='Blue cells are editable inputs. CDM is the lower bound. A wins shared-queue ties. First arrival: 1=zero, 0=sampled. / المدخلات باللون الأزرق';
+  if(!m){distribution(s,c.iat,1,'Interarrival / زمن الوصول');distribution(s,c.a,6,'Service A / خدمة أحمد');if(c.b)distribution(s,c.b,11,'Service B / خدمة بكر');}
+  header(s,1,20,['Controls / الإعدادات','Value / القيمة']);
+  const controls:[string,string|number][]=[['First arrival at 0',m?0:Number(c.zero)],['Queue mode',c.mode??'shared'],['Routing',c.routing??'alternate'],['λ',c.lambda??2],['μ',c.mu??3]];
+  controls.forEach(([label,v],i)=>{s.getCell(`T${i+2}`).value=label;input(s,`U${i+2}`,v);});
+  s.getCell('U2').dataValidation={type:'whole',operator:'between',formulae:[0,1],showErrorMessage:true};s.getCell('U3').dataValidation={type:'list',formulae:['"shared,independent"'],showErrorMessage:true};s.getCell('U4').dataValidation={type:'list',formulae:['"alternate,random,shortest"'],showErrorMessage:true};
+  for(const address of ['U5','U6'])s.getCell(address).dataValidation={type:'decimal',operator:'greaterThan',formulae:[0],showErrorMessage:true};
+  s.getCell('T7').value='Customers / العملاء';s.getCell('U7').value=c.n;
+  s.getCell('T8').value='F9 recalculates every sample. Seed applies only to browser runs.';s.getCell('T8').alignment={wrapText:true};s.getRow(8).height=44;
+  header(s,head,1,queueHeaders);const free=[0,0];
+  rows.forEach((r,i)=>{const rr=first+i;const cached=[r.NC,r.ri,r.IAT,r.AT,r.rs,r.server+1,r.ST,r.SS,r.ES,r.wait,r.system,r.idle,free[0],free[1],r.server===0?r.ES:free[0],r.server===1?r.ES:free[1],two?(r.server===0?.25:.75):0,rows.filter(x=>x.AT<=r.AT&&x.SS>r.AT).length];queueFormulas(c,rr).forEach((cell,j)=>formula(s,cell.address,cell.formula,cached[j]));free[r.server]=r.ES;});
+  const range=(col:string)=>`${col}${first}:${col}${last}`;
+  header(s,10,20,['Statistics / الإحصاءات','Live value']);
+  const measures:[string,string,number][]=[
+    ['Total wait',`SUM(${range('J')})`,stat.totalWait],['Average wait',`AVERAGE(${range('J')})`,stat.avgWait],['Probability of wait',`COUNTIF(${range('J')},">0")/COUNT(${range('A')})`,stat.waitProbability],['Horizon',`MAX(${range('I')})`,stat.totalTime],['Total idle',`U14*${two?2:1}-SUM(${range('G')})`,stat.totalIdle],['Professor effectiveness / idle ratio',`IF(U14=0,0,U15/(U14*${two?2:1}))`,stat.idleRatio],['Actual utilization','IF(U14=0,0,1-U16)',stat.utilization],['Average system time',`AVERAGE(${range('K')})`,stat.avgSystem],['Maximum queue',`MAX(${range('R')})`,stat.maxQueue],['L (simulation)',`IF(U14=0,0,SUM(${range('K')})/U14)`,stat.L],['Lq (simulation)',`IF(U14=0,0,SUM(${range('J')})/U14)`,stat.Lq],
+  ];measures.forEach(([name,f,v],i)=>{s.getCell(`T${11+i}`).value=name;formula(s,`U${11+i}`,f,v);});
+  for(let server=1;server<=(two?2:1);server++){const base=23+(server-1)*3;s.getCell(`T${base}`).value=`Server ${server} busy`;formula(s,`U${base}`,`SUMIF(${range('F')},${server},${range('G')})`,stat.perServer[server-1].busy);s.getCell(`T${base+1}`).value=`Server ${server} idle`;formula(s,`U${base+1}`,`U14-U${base}`,stat.perServer[server-1].idle);s.getCell(`T${base+2}`).value=`Server ${server} utilization`;formula(s,`U${base+2}`,`IF(U14=0,0,U${base}/U14)`,stat.perServer[server-1].utilization);}
+  if(m){header(s,30,20,['M/M/1 theory','Value']);const theory=mm1(c.lambda!,c.mu!);const fs=['$U$5/$U$6','$U$5/($U$6-$U$5)','$U$5^2/($U$6*($U$6-$U$5))','1/($U$6-$U$5)','$U$5/($U$6*($U$6-$U$5))'];['rho','L','Lq','W','Wq'].forEach((name,i)=>{s.getCell(`T${31+i}`).value=name;formula(s,`U${31+i}`,`IF(AND($U$5>0,$U$6>$U$5),${fs[i]},"No finite steady state")`,theory?Object.values(theory)[i]:'No finite steady state');});}
+  const help=Math.max(last+4,39);header(s,help,1,['Cell / الخلية','Meaning / المعنى']);s.mergeCells(`C${help}:R${help}`);s.getCell(`C${help}`).value='Exact Excel formula / صيغة إكسل الفعلية';
+  const guide=[...(!m?[...distributionFormulas(0,c.iat.length),...distributionFormulas(5,c.a.length),...(c.b?distributionFormulas(10,c.b.length):[])]:[]),...queueFormulas(c,first),...(c.n>1?queueFormulas(c,first+1):[])];guide.forEach((cell,i)=>{const rr=help+i+1;s.getCell(`A${rr}`).value=cell.address;s.getCell(`B${rr}`).value=cell.label;s.mergeCells(`C${rr}:R${rr}`);s.getCell(`C${rr}`).value=`=${cell.formula}`;s.getCell(`C${rr}`).font={name:'Consolas',size:10};s.getCell(`B${rr}`).alignment={wrapText:true};s.getRow(rr).height=30;});
+  s.columns.forEach((col,i)=>{col.width=i===19?37:i===20?24:16;});s.getColumn('S').width=3;s.getRow(3).height=30;s.getCell('A3').alignment={wrapText:true};s.views=[{state:'frozen',ySplit:head,xSplit:1}];s.autoFilter=`A${head}:R${last}`;
+  s.addConditionalFormatting({ref:`J${first}:J${last}`,rules:[{type:'cellIs',operator:'greaterThan',formulae:['0'],priority:1,style:{fill:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFE6B3'}}}}]});
+  s.pageSetup={orientation:'landscape',paperSize:9,fitToPage:true,fitToWidth:1,fitToHeight:0};return w;
+}
+
+export function makeChanceWorkbook(dice:boolean){const w=workbook(),s=w.addWorksheet(dice?'Dice':'Coin');title(s,dice?'SimuLab · Dice / النرد':'SimuLab · Coin / العملة','J');s.mergeCells('A2:J2');s.getCell('A2').value='F9 / Fn+F9 → recalculate / اضغط لإعادة المحاكاة. No macros / بدون ماكرو.';s.getRow(2).height=28;s.getCell('A4').value=dice?'Die value / القيمة':'RAND / العدد العشوائي';
+  for(const cell of chanceFormulas(dice))formula(s,cell.address,cell.formula);
+  if(dice){for(let r=7;r<=9;r++){s.getRow(r).height=49;for(let c=2;c<=4;c++){const cell=s.getCell(r,c);cell.font={name:'Arial',size:30,color:{argb:'FF193666'}};cell.alignment={horizontal:'center',vertical:'middle'};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEAF1FF'}};}}}else{s.getCell('A6').value='Result / النتيجة';s.mergeCells('B6:D8');s.getCell('B6').font={size:24,bold:true,color:{argb:'FF3158A0'}};s.getCell('B6').alignment={horizontal:'center',vertical:'middle'};}
+  header(s,12,1,['Cell / الخلية','Purpose / الوظيفة']);s.mergeCells('B12:C12');s.mergeCells('D12:J12');header(s,12,4,['Formula / الصيغة']);
+  chanceFormulas(dice).forEach((c,i)=>{const r=i+13;s.getCell(`A${r}`).value=c.address;s.mergeCells(`B${r}:C${r}`);s.getCell(`B${r}`).value=c.label;s.getCell(`B${r}`).alignment={wrapText:true,vertical:'middle'};s.mergeCells(`D${r}:J${r}`);s.getCell(`D${r}`).value=`=${c.formula}`;s.getCell(`D${r}`).font={name:'Consolas',size:10};s.getCell(`D${r}`).alignment={wrapText:true,vertical:'middle',readingOrder:'ltr'};s.getRow(r).height=38;});
+  s.columns.forEach((c,i)=>c.width=i===0?24:12);s.getColumn('B').width=12;s.getCell('B4').numFmt=dice?'0':'0.000000';s.views=[{showGridLines:false}];s.pageSetup={orientation:'landscape',paperSize:9,fitToPage:true,fitToWidth:1,fitToHeight:1};return w;
+}
+export async function save(w:ExcelJS.Workbook,name:string){const buffer=await w.xlsx.writeBuffer();const url=URL.createObjectURL(new Blob([buffer as BlobPart],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));const a=document.createElement('a');a.href=url;a.download=`simulab-${name}.xlsx`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+export async function exportChance(_values:{random:number;value:number}[],dice:boolean){await save(makeChanceWorkbook(dice),dice?'dice':'coin');}
+
+
