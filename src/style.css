@@ -28,3 +28,28 @@
 .person.match{border-width:2px;animation:bday-pop .35s ease}
 @keyframes bday-pop{from{transform:scale(.85)}to{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.person.match{animation:none}}
+.laws-toggle{display:flex;align-items:center;gap:14px;width:100%;background:none;border:0;padding:0;text-align:start}
+.laws-toggle strong{display:block;font-size:17px;font-weight:620}
+.laws-toggle .eyebrow{display:block;margin-bottom:5px}
+.laws-toggle .chev{margin-inline-start:auto;color:var(--muted);transition:transform .2s}
+.laws-toggle .chev.open{transform:rotate(180deg)}
+.laws>p{margin:16px 0 4px}
+.law-list{list-style:none;padding:0;margin:14px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.law-list li{border:1px solid var(--border);border-radius:9px;padding:15px;background:#6687ff06;display:flex;flex-direction:column;gap:9px;min-width:0}
+.law-head{display:flex;align-items:center;gap:9px}
+.law-num{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#6687ff22;color:#a3b6ff;font-size:11px;flex-shrink:0}
+.law-math{padding:10px 12px;font-size:13px;white-space:pre-wrap;font-family:"Cambria Math","STIX Two Math",Georgia,serif}
+.law-excel{display:flex;align-items:center;gap:8px;min-width:0}
+.law-excel small{font-size:10px;color:#65d4b1;letter-spacing:1px}
+.law-excel code{padding:6px 9px;font-size:11px;flex:1;white-space:pre-wrap}
+.law-list p{font-size:12.5px;line-height:1.75}
+.steps{padding-inline-start:22px;margin:16px 0;color:var(--muted);font-size:13px;line-height:1.85;display:grid;gap:8px}
+.steps code{display:inline-block;padding:6px 10px;margin-top:4px;font-size:12px;white-space:pre-wrap;max-width:100%}
+.panel h2 svg{vertical-align:-3px}
+.attack{margin-top:18px;display:grid;gap:10px}
+.attack code{white-space:pre-wrap;word-break:break-word;font-size:12px}
+.attack code.fraud{color:#ff9b85}
+details{margin-top:6px}
+summary{cursor:pointer;color:var(--muted);font-size:13px;margin-bottom:12px}
+[role=tablist] .secondary{white-space:nowrap}
+@media(max-width:680px){.law-list{grid-template-columns:1fr}}

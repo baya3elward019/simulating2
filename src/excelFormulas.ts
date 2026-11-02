@@ -25,3 +25,56 @@ export function queueFormulas(c:Config,row:number):FormulaCell[]{
   return fs.map((formula,i)=>({address:`${String.fromCharCode(65+i)}${row}`,label:queueHeaders[i],formula}));
 }
 export function distributionFormulas(start:number,length:number):FormulaCell[]{const col=(i:number)=>String.fromCharCode(65+start+i);return Array.from({length},(_,i)=>{const r=i+6;return [{address:`${col(0)}${r}`,label:'CDM',formula:i?`${col(3)}${r-1}`:'0'},{address:`${col(3)}${r}`,label:'CDF',formula:`ROUND(${col(0)}${r}+${col(2)}${r},12)`}];}).flat();}
+
+// ---------------------------------------------------------------------------
+// Birthday paradox workbook (one sheet). Addresses are fixed so the website guide matches the file.
+export const BDAY = {N: 'B6', n: 'B7', target: 'B8', rooms: 'B9', stepHeader: 48, stepFirst: 49, stepRows: 100, expHeader: 48, expFirst: 49,
+  hashHeader: 48, sessionHeader: 57, roomsHeader: 152, roomsFirst: 153, roomCount: 200, people: 100} as const;
+export const bdayStepLast = BDAY.stepFirst + BDAY.stepRows - 1;
+export const bdayRoomsLast = BDAY.roomsFirst + BDAY.roomCount - 1;
+/** Column letter for 1-based index (1 → A, 27 → AA). */
+export function colName(i: number): string {let s = ''; for (; i > 0; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + (i - 1) % 26) + s; return s;}
+export const bdayMatchCol = colName(2 + BDAY.people); // after A (room) and the person columns
+const lastPerson = colName(1 + BDAY.people);
+export const bdayExact = (n: string, N: string) => `IF(${n}<2,0,IF(${n}>${N},1,1-EXP(GAMMALN(${N}+1)-GAMMALN(${N}-${n}+1)-${n}*LN(${N}))))`;
+export function birthdaySummaryFormulas(): FormulaCell[] {
+  const {stepFirst} = BDAY, steps = `D${stepFirst}:D${bdayStepLast}`;
+  return [
+    {address: 'E6', label: 'Pairs n(n−1)/2 / عدد الأزواج', formula: 'B7*(B7-1)/2'},
+    {address: 'E7', label: 'Exact p(n) / الاحتمال الدقيق', formula: bdayExact('B7', 'B6')},
+    {address: 'E8', label: 'Approximation 1−e^(−n(n−1)/2N) / التقريب الأسي', formula: 'IF(B7<2,0,1-EXP(-B7*(B7-1)/(2*B6)))'},
+    {address: 'E9', label: 'n for the target ≈ √(2N·ln(1/(1−p))) / العدد اللازم', formula: 'SQRT(2*B6*LN(1/(1-B8)))'},
+    {address: 'E10', label: 'Smallest n with exact p ≥ target / أصغر عدد', formula: `IF(COUNTIF(${steps},"<"&B8)>=${BDAY.stepRows},">${BDAY.stepRows}",COUNTIF(${steps},"<"&B8)+1)`},
+    {address: 'E11', label: 'Live rooms with a match (F9) / نسبة الغرف المتطابقة', formula: `AVERAGE(${bdayMatchCol}${BDAY.roomsFirst}:${bdayMatchCol}${bdayRoomsLast})`},
+    {address: 'E12', label: '95% sampling margin 1.96·√(p(1−p)/R) / هامش الخطأ', formula: 'IF(B9>0,1.96*SQRT(E7*(1-E7)/B9),0)'},
+  ];
+}
+export function birthdayStepFormulas(row: number): FormulaCell[] {
+  return [
+    {address: `B${row}`, label: '(N−k+1)/N — chance person k avoids the taken days', formula: `MAX(0,($B$6-A${row}+1)/$B$6)`},
+    {address: `C${row}`, label: 'Q(k) all different = Q(k−1)·(N−k+1)/N', formula: row === BDAY.stepFirst ? `B${row}` : `C${row - 1}*B${row}`},
+    {address: `D${row}`, label: 'Exact p(k) = 1 − Q(k)', formula: `1-C${row}`},
+    {address: `E${row}`, label: 'Approx 1 − e^(−k(k−1)/(2N))', formula: `1-EXP(-A${row}*(A${row}-1)/(2*$B$6))`},
+    {address: `F${row}`, label: 'Approx − exact', formula: `E${row}-D${row}`},
+  ];
+}
+export function birthdayExperimentFormulas(row: number): FormulaCell[] {
+  const table = `$A$${BDAY.stepFirst}:$E$${bdayStepLast}`;
+  return [
+    {address: `K${row}`, label: 'Exact p(n) looked up in the step table', formula: `VLOOKUP(H${row},${table},4,FALSE)`},
+    {address: `L${row}`, label: 'Approximation looked up in the step table', formula: `VLOOKUP(H${row},${table},5,FALSE)`},
+    {address: `M${row}`, label: 'Simulated − exact', formula: `J${row}-K${row}`},
+    {address: `N${row}`, label: '95% margin 1.96·√(p(1−p)/T)', formula: `1.96*SQRT(K${row}*(1-K${row})/I${row})`},
+    {address: `O${row}`, label: 'Inside the 95% margin?', formula: `IF(ABS(M${row})<=N${row},"within / ضمن الهامش","outside / خارج الهامش")`},
+  ];
+}
+export function birthdayRoomFormulas(row: number): FormulaCell[] {
+  const people = `B${row}:${lastPerson}${row}`;
+  return [
+    {address: `B${row}`, label: 'Random birthday of person 1 (blank if beyond n)', formula: `IF(B$${BDAY.roomsHeader}<=$B$7,RANDBETWEEN(1,$B$6),"")`},
+    {address: `${bdayMatchCol}${row}`, label: 'Room has a shared birthday? 1 = yes', formula: `IF(SUMPRODUCT((${people}<>"")*(COUNTIF(${people},${people})>1))>0,1,0)`},
+  ];
+}
+export function birthdayFormulas(): FormulaCell[] {
+  return [...birthdaySummaryFormulas(), ...birthdayStepFormulas(BDAY.stepFirst + 1), ...birthdayExperimentFormulas(BDAY.expFirst), ...birthdayRoomFormulas(BDAY.roomsFirst)];
+}
