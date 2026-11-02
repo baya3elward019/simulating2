@@ -31,3 +31,16 @@ it('writes representative fixtures for native Excel recalculation verification',
   for(const dice of [false,true])await makeChanceWorkbook(dice).xlsx.writeFile(`${dir}/${dice?'dice':'coin'}.xlsx`);
   await writeFile(`${dir}/layout.json`,JSON.stringify(meta));await writeFile('tmp/latest-excel-qa.txt',dir);
 });
+it('exports a live one-sheet birthday workbook with laws, theory, experiment and rooms',async()=>{
+  const {makeBirthdayWorkbook}=await import('./export');const {BDAY,birthdayFormulas,bdayMatchCol}=await import('./excelFormulas');
+  const w=makeBirthdayWorkbook({n:23,seed:'t'}),loaded=new ExcelJS.Workbook();await loaded.xlsx.load(await w.xlsx.writeBuffer());
+  expect(loaded.worksheets).toHaveLength(1);const s=loaded.worksheets[0];
+  for(const c of birthdayFormulas())expect(s.getCell(c.address).formula).toBe(c.formula);
+  expect(s.getCell('B6').value).toBe(365);expect(s.getCell('B7').value).toBe(23);
+  expect(s.getCell(`D${BDAY.stepFirst+22}`).result).toBeCloseTo(0.5073,4);
+  expect(s.getCell(`CW${BDAY.roomsFirst}`).formula).toContain('RANDBETWEEN(1,$B$6)');
+  expect(s.getCell(`${bdayMatchCol}${BDAY.roomsFirst+199}`).formula).toContain('SUMPRODUCT');
+  expect(s.getCell(`H${BDAY.expFirst}`).value).toBe(5);
+  const text=JSON.stringify(s.getSheetValues());expect(text).toContain('Complement rule');expect(text).toContain('قاعدة المتممة');
+  await mkdir('tmp',{recursive:true});await w.xlsx.writeFile('tmp/birthday-qa.xlsx');
+});

@@ -1,0 +1,38 @@
+
+Birthday paradox – 10,000 trials per n (N = 365)
+   n | simulated |    theory |    approx |     diff |    ±95%
+--------------------------------------------------------------
+   5 |    0.0280 |    0.0271 |    0.0270 |  +0.0009 |  0.0032
+  10 |    0.1142 |    0.1169 |    0.1160 |  -0.0027 |  0.0063
+  15 |    0.2604 |    0.2529 |    0.2500 |  +0.0075 |  0.0085
+  20 |    0.4131 |    0.4114 |    0.4058 |  +0.0017 |  0.0096
+  25 |    0.5683 |    0.5687 |    0.5604 |  -0.0004 |  0.0097
+  30 |    0.7123 |    0.7063 |    0.6963 |  +0.0060 |  0.0089
+  35 |    0.8131 |    0.8144 |    0.8041 |  -0.0013 |  0.0076
+  40 |    0.8959 |    0.8912 |    0.8820 |  +0.0047 |  0.0061
+  45 |    0.9424 |    0.9410 |    0.9336 |  +0.0014 |  0.0046
+  50 |    0.9684 |    0.9704 |    0.9651 |  -0.0020 |  0.0033
+  55 |    0.9875 |    0.9863 |    0.9829 |  +0.0012 |  0.0023
+  60 |    0.9932 |    0.9941 |    0.9922 |  -0.0009 |  0.0015
+  65 |    0.9980 |    0.9977 |    0.9966 |  +0.0003 |  0.0009
+  70 |    0.9995 |    0.9992 |    0.9987 |  +0.0003 |  0.0006
+
+Mean |simulated - theory| = 0.0022; 14/14 points inside the 95% margin.
+
+Effect of the number of trials (n = 23, exact = 0.5073, 10 repetitions each)
+  trials | mean |error| | expected SE
+     100 |       0.0481 |      0.0500
+   1,000 |       0.0185 |      0.0158
+  10,000 |       0.0032 |      0.0050
+
+Session IDs: N = 2^16 = 65,536;  sqrt(N) = 256.0000
+n ≈ 1.1774 × sqrt(N) = 301.4170 → 302 active sessions
+exact P(collision) with 302 sessions = 0.5007
+simulated with 2,000 servers = 0.5015
+
+Hash functions: inputs needed for a 50% collision ≈ 1.1774 × 2^(b/2)
+     MD5 (128 bits): 2.1719e+19 ≈ 2^64.24;  second preimage ≈ 2^128
+   SHA-1 (160 bits): 1.4234e+24 ≈ 2^80.24;  second preimage ≈ 2^160
+ SHA-256 (256 bits): 4.0065e+38 ≈ 2^128.24;  second preimage ≈ 2^256
+
+Saved python/output/birthday_results.csv and python/output/birthday_chart.png

@@ -11,3 +11,5 @@ preview-f9.png
 .env
 .env.*
 !.env.example
+python/output/
+__pycache__/

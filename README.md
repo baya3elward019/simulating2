@@ -38,7 +38,10 @@ Vite uses `base: './'` for both repository and root Pages paths. Navigation stay
 - Shared or independent two-server queues with alternate, random or earliest-available routing.
 - Exponential M/M/1 simulation and steady-state comparisons; unstable systems support finite simulation only.
 - Waiting/service, arrival, queue length and server timeline charts; play/pause and scrub the queue animation.
-- Birthday paradox page: pick a group size (2–100), fill a room with random birthdays and see who matches, compare your running tally and a 1,000-room simulation with the exact probability, and follow the probability curve.
+- Birthday paradox page with five tabs that follow the course assignment: an interactive room (2–100 people); laws and the worked solution (exact vs approximation for n = 10, 23, 50, derivation of n ≈ 1.1774√N, a step-by-step calculator for any N and n); the Monte Carlo experiment (n = 5…70 step 5, 10,000 seeded trials each, table, chart, 95% margins and a trial-count study); hash functions and digital signatures (MD5/SHA-1/SHA-256 birthday bounds and a live collision attack on a truncated SHA-256 contract); and session IDs (N = 2^16 → 302 sessions, simulation, hijacking risk, OWASP guidance).
+- Birthday paradox Excel export: one live sheet with inputs (N, n, target), every law with its Excel formula, the k = 1…100 product table, the website experiment with live comparisons, hash/session tables and 200 RANDBETWEEN rooms with COUNTIF match detection (F9 = new rooms).
+- “Laws & formulas” panels on every simulator (coin, dice, single queue, two servers, M/M/1, birthday). `src/laws.ts` is the single source for the panels and for the “Laws / القوانين” section written into every exported workbook.
+- `python/birthday_simulation.py`: the assignment's Part 3 program in Python (table, CSV and matplotlib chart, trial-count study, session IDs, hash bounds).
 - Seven Excel lessons, downloadable examples and editable manual practice problems.
 - One-sheet live queue workbooks with RAND, VLOOKUP, server-routing formulas, statistics and a formula guide. F9 regenerates the simulation.
 
@@ -73,7 +76,7 @@ Press **F9** (or **Fn+F9**) in desktop Excel. No VBA or macro permission is need
 ExcelJS does not generate chart objects. Select simulation columns and use Excel Insert → Chart if desired. Formulas are stored in Excel's invariant syntax; when typing formulas manually, some regional Excel settings require semicolons instead of commas.
 ## Structure
 
-`src/engine.ts`: pure probability, random and queue models. `src/export.ts`: lazy-loaded workbook generation. `src/content.ts`: lessons. `src/App.tsx`: reusable UI, chart, distribution and lesson components. `src/birthday.ts` / `src/Birthday.tsx`: birthday paradox math and page. `src/style.css`: theme, layout, animation and responsive styles. `src/engine.test.ts`: deterministic academic test cases.
+`src/engine.ts`: pure probability, random and queue models. `src/export.ts`: lazy-loaded workbook generation. `src/content.ts`: lessons. `src/App.tsx`: reusable UI, chart, distribution and lesson components. `src/birthday.ts` / `src/Birthday.tsx`: birthday paradox math (exact, approximation, Monte Carlo, hash and signature-collision helpers) and page. `src/laws.ts` / `src/Laws.tsx`: the laws shown on every page and in every workbook. `docs/`: the Arabic assignment report and screenshots. `src/style.css`: theme, layout, animation and responsive styles. `src/engine.test.ts`: deterministic academic test cases.
 
 ## Practical limits
 
@@ -84,4 +87,4 @@ Reference discrepancy: the screenshot's service CDM entries do not consistently 
 
 ## Verification
 
-22 automated tests pass, including one-sheet XLSX round trips and formula/address consistency. Native Microsoft Excel recalculation was checked for single queue, two-server routing, M/M/1, coin thresholds and all six dice pip arrangements. The dice workbook was also downloaded from the running website and inspected. The development watcher ignores temporary Excel files to avoid Windows file-lock crashes. Large dependency chunks produce a non-fatal Vite size warning; ExcelJS is loaded only when exporting.
+27 automated tests pass (birthday maths, the n = 5…70 experiment, the signature-collision demo and the birthday workbook included), including one-sheet XLSX round trips and formula/address consistency. All exported workbooks were also recalculated in LibreOffice without formula errors, and the queue sheets were cross-checked against an independent FCFS recomputation. Native Microsoft Excel recalculation was checked for single queue, two-server routing, M/M/1, coin thresholds and all six dice pip arrangements. The dice workbook was also downloaded from the running website and inspected. The development watcher ignores temporary Excel files to avoid Windows file-lock crashes. Large dependency chunks produce a non-fatal Vite size warning; ExcelJS is loaded only when exporting.
