@@ -76,7 +76,7 @@ Press **F9** (or **Fn+F9**) in desktop Excel. No VBA or macro permission is need
 ExcelJS does not generate chart objects. Select simulation columns and use Excel Insert → Chart if desired. Formulas are stored in Excel's invariant syntax; when typing formulas manually, some regional Excel settings require semicolons instead of commas.
 ## Structure
 
-`src/engine.ts`: pure probability, random and queue models. `src/export.ts`: lazy-loaded workbook generation. `src/content.ts`: lessons. `src/App.tsx`: reusable UI, chart, distribution and lesson components. `src/birthday.ts` / `src/Birthday.tsx`: birthday paradox math (exact, approximation, Monte Carlo, hash and signature-collision helpers) and page. `src/laws.ts` / `src/Laws.tsx`: the laws shown on every page and in every workbook. `docs/`: the Arabic assignment report and screenshots. `src/style.css`: theme, layout, animation and responsive styles. `src/engine.test.ts`: deterministic academic test cases.
+`src/engine.ts`: pure probability, random and queue models. `src/export.ts`: lazy-loaded workbook generation. `src/content.ts`: lessons. `src/App.tsx`: reusable UI, chart, distribution and lesson components. `src/birthday.ts` / `src/Birthday.tsx`: birthday paradox math (exact, approximation, Monte Carlo, hash and signature-collision helpers) and page. `src/laws.ts` / `src/Laws.tsx`: the laws shown on every page and in every workbook. `docs/`: the Arabic assignment report (`birthday-paradox-report.docx` / `.pdf`) and screenshots. `src/style.css`: theme, layout, animation and responsive styles. `src/engine.test.ts`: deterministic academic test cases.
 
 ## Practical limits
 
